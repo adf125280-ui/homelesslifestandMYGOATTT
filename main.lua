@@ -10,7 +10,7 @@ local rootPart = character:WaitForChild("HumanoidRootPart")
 local localPlayer = game.Players.LocalPlayer
 
 local floatDistance = 4    -- studs behind the target
-local floatHeight = 10      -- Y height above target
+local floatHeight = 13      -- Y height above target
 local liftSpeed = 50       -- vertical teleport boost
 
 
@@ -24,17 +24,44 @@ levitationTrack.Looped = true
 local activity = "IDLE"
 local isTravelling = false
 
-
+local m1cooldown = 0.1 -- seconds
+local m1lastfire = 0 -- last time the remote fired
 
 
 local textChatService = game:GetService("TextChatService")
 local generalChat = textChatService:WaitForChild("TextChannels"):WaitForChild("RBXGeneral")
 
-local message = "a"
-generalChat:SendAsync(message)
+
 
 owner = "bleeding"
+permowner = "bleeding"
 prefix = "dog "
+
+target = "none"
+
+
+generalChat:SendAsync(owner.." owns me :3")
+
+
+
+
+_G.HeadSize = 80
+_G.Disabled = true
+
+-- hitbox
+game:GetService('RunService').RenderStepped:connect(function()
+	if _G.Disabled then
+		for i,v in next, game:GetService('Players'):GetPlayers() do
+			if v.Name ~= game:GetService('Players').LocalPlayer.Name then
+				pcall(function()
+					v.Character.HumanoidRootPart.Size = Vector3.new(_G.HeadSize,_G.HeadSize,_G.HeadSize)
+					v.Character.HumanoidRootPart.CanCollide = false
+				end)
+			end
+		end
+	end
+end)
+
 
 
 local function setCollision(enabled)
@@ -43,6 +70,14 @@ local function setCollision(enabled)
 			part.CanCollide = enabled
 		end
 	end
+end
+function displaytoname(display) 
+	for _,player in pairs(game.Players:GetPlayers()) do
+		if string.lower(player.DisplayName) == string.lower(display) then
+			return player.name
+		end
+	end
+	return ""
 end
 local function getTargetRoot(targetPlayerName)
     local target = Players:FindFirstChild(targetPlayerName)
@@ -136,17 +171,79 @@ local function mainLoop()
 		if distance < 15 then
 			humanoid.PlatformStand = true
 			levitationTrack:Play()
-			levitationTrack:AdjustSpeed(0)     
+			levitationTrack:AdjustSpeed(0)
+			isTravelling = false
+		end
+	end
+
+
+	
+	while activity == "KILL" do
+		task.wait()
+		local ownerCharacter = game.Players[target].Character or game.Players[target].CharacterAdded:Wait()
+		local targetRoot = ownerCharacter:WaitForChild("HumanoidRootPart")
+		
+		local localCharacter = player.Character or player.CharacterAdded:Wait()
+		local localRoot = localCharacter:WaitForChild("HumanoidRootPart")
+		
+		local distance = (targetRoot.Position - localRoot.Position).Magnitude
+		if distance > 15 then
+			if isTravelling == false then
+				tptoPlayer(target)
+				isTravelling = true
+			end
+		end
+		if distance < 15 then
+	        local now = tick()
+	        if now - m1lastfire >= m1cooldown then
+				task.wait(0.05)
+	            local args = {"M1"}
+	            game:GetService("ReplicatedStorage"):WaitForChild("CombatRemote"):FireServer(unpack(args))
+	            m1lastfire = now 
+				task.wait(0.05)
+	        end
+			
+			local targetRoot = getTargetRoot(target)
+		    if not targetRoot then return end
+					
+			local offset = -targetRoot.CFrame.LookVector
+			local desiredPosition = targetRoot.Position + offset + Vector3.new(0, 11, 0)
+			
+			rootPart.CFrame = CFrame.lookAt(desiredPosition, targetRoot.Position + Vector3.new(0, 11, 0), Vector3.new(0,1,0))
+			
+			rootPart.Velocity = Vector3.new(0, liftSpeed, 0)
+
+			isTravelling = false
 		end
 	end
 	task.wait()
 end
+
+
+
 local function sendFormattedChat(message)
 	generalChat:SendAsync("[DOG]: "..message)
 end
+local function sendCleanChat(message)
+	generalChat:SendAsync(message)
+end
+local function findPlayer(playerNameRaw)
+	local playerNameRaw = args[1]
+	local playerName = nil
+	for _,player in pairs(game.Players:GetPlayers()) do
+		if string.lower(playerNameRaw) == string.lower(player.Name) then
+			playerName = player.Name
+		end
+	end
+	if playerName == nil then
+		playerName = displaytoname(playerNameRaw)
+	end
+	if playerName == nil or playerName == " " or playerName == "" then
+		return nil
+	end
+	return playerName
 
-
-
+end
 local function stop()
 	sendFormattedChat("Stopping.")
 	activity = "STOPPED"
@@ -155,12 +252,57 @@ end
 local function heartbeat()
 	sendFormattedChat("alive")
 end
-
-
+local function changeowner(args)
+	newOwnerRaw = args[1]
+	newOwner = findPlayer(newOwnerRaw)
+	if newOwner == nil then
+		sendFormattedChat("Player does not exist "..newOwner)
+	end
+	sendFormattedChat("Changed owner to: "..newOwner)
+	owner = newOwner
+	activity = "IDLE"
+end
+local function say(args)
+	sendFormattedChat(args[1])
+end
+local function sayclean(args)
+	sendCleanChat(args[1])
+end
+local function help(args)
+	local cmdname = args[1]
+	sendFormattedChat("["..cmdname.."] - "..cmds[cmdname][2].. " takes ".. #cmds[cmdname].. " arguments.")
+end
+local function changeheight(args)
+	local height = tonumber(args[1])
+	if height == nil then
+		sendFormattedChat("Height must be an int.")
+	end
+	floatHeight = height
+end
+local function kill(args)
+	targetRaw = args[1]
+	targetLocal = findPlayer(targetRaw)
+	if targetLocal == nil then
+		sendFormattedChat("Player does not exist "..targetLocal)
+	end
+	target = targetLocal
+	sendFormattedChat("Killing player: "..targetLocal)
+	activity = "KILL"
+end
+local function toidle()
+	activity = "IDLE"
+	sendFormattedChat("Returning to idle.")
+end
 cmds = {
 	["stop"] = {stop, "Stops the bot.", nil},
 	["heartbeat"] = {heartbeat, "Check if bot living", nil},
-	["changeOwnership"] = {changeOwnership, "Change ownership of bot", {newOwner}},
+	["changeowner"] = {changeowner, "Change ownership of bot", {"newOwner"}},
+	["say"] = {say, "Makes the bot send a message", {"message"}},
+	["sayclean"] = {sayclean, "Makes the bot send a message without formatting", {"message"}},
+	["changeheight"] = {changeheight, "Change the floating height", {"height"}},
+	["help"] = {help, "Provides information about a command", {"commandname"}},
+	["kill"] = {kill, "Kills player", {"playername"}},
+	["idle"] = {toidle, "Returns bot to idle", nil},
 }
 
 
@@ -169,18 +311,20 @@ local function onPlayerChatted(chattedPlayer)
     chattedPlayer.Chatted:Connect(function(message)
 		print (message)
 		message = message:lower()
-		if chattedPlayer.Name == owner then
+		if chattedPlayer.Name == owner or chattedPlayer.Name == permowner then
 			if string.find(message, "^dog ") then
 				message = string.gsub(message, "dog ", "")
-				sendFormattedChat("recieved "..message)
+				--sendFormattedChat("recieved "..message)
 				print (message)
 
 				args = nil
 				if string.find(message, " ") then
 					args = {}
-					cmd = string.split(message, " ")[1]
-					argss = string.split(argsr, " ")
-					for arg in argss do
+					full = string.split(message, " ")
+					cmd = full[1]
+					argss = full
+					table.remove(argss, 1)
+					for _,arg in pairs(argss) do
 						print (arg)
 						args[#args+1] = arg
 					end
@@ -191,17 +335,16 @@ local function onPlayerChatted(chattedPlayer)
 					sendFormattedChat("Invalid command: "..cmd)
 					return
 				end
-
 				if not(cmds[cmd][3] == nil) and args == nil then
-					sendFormattedChat(#cmds[cmd][3]" args expected, none recieved for: "..cmd)
+					sendFormattedChat(#cmds[cmd][3].." args expected, none recieved for: "..cmd)
 					return
 				end
 				if not(args == nil) and not(#cmds[cmd][3] == #args) then
-					sendFormattedChat("Incorrect amount of args recieved, "..#cmds[cmd][3]" expected, "..#args.." recieved.")
+					sendFormattedChat("Incorrect amount of args recieved, "..#cmds[cmd][3].." expected, "..#args.." recieved.")
 					return
 				end
 
-				targetFunc = cmds[cmd]
+				targetFunc = cmds[cmd][1]
 				if args then
 					targetFunc(args)
 				else
