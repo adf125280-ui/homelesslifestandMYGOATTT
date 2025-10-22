@@ -187,7 +187,7 @@ local function onPlayerChatted(chattedPlayer)
 				else
 					cmd = message
 				end
-				if not(cmd in cmds) then
+				if not(cmds[cmd]) then
 					sendFormattedChat("Invalid command: "..cmd)
 					return
 				end
