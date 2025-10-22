@@ -158,7 +158,7 @@ end
 
 
 cmds = {
-	["stop"] = {stop, "Stops the bot.", nil}
+	["stop"] = {stop, "Stops the bot.", nil},
 	["heartbeat"] = {heartbeat, "Check if bot living", nil},
 	["changeOwnership"] = {changeOwnership, "Change ownership of bot", {newOwner}},
 }
