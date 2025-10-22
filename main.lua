@@ -1,4 +1,3 @@
-
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UIS = game:GetService("UserInputService")
@@ -96,9 +95,9 @@ end
 
 UIS.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
-    if input.KeyCode == "L" then
-		print ("Script stopped!")
-		activity = "STOPPED"
+    if input.KeyCode == Enum.KeyCode.L then
+        print("Script stopped!")
+        activity = "STOPPED"
     end
 end)
 
