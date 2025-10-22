@@ -94,7 +94,6 @@ local function tptoPlayer(targetPlayerName)
 end
 
 UIS.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
     if input.KeyCode == Enum.KeyCode.L then
         print("Script stopped!")
         activity = "STOPPED"
