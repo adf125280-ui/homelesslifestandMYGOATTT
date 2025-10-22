@@ -31,6 +31,18 @@ local m1lastfire = 0 -- last time the remote fired
 local textChatService = game:GetService("TextChatService")
 local generalChat = textChatService:WaitForChild("TextChannels"):WaitForChild("RBXGeneral")
 
+local Player = Players.LocalPlayer
+
+local trackedAnimations = {
+    "rbxassetid://87671032450716",
+    "rbxassetid://124067495485615",
+    "rbxassetid://95313940608650",
+    "rbxassetid://83975010227040",
+    "rbxassetid://110804214522892",
+    "rbxassetid://80539500731203"
+}
+
+local playerBlocking = {}
 
 
 owner = "bleeding"
@@ -63,6 +75,50 @@ game:GetService('RunService').RenderStepped:connect(function()
 end)
 
 
+
+
+-- block tracker
+local function isTrackedAnimation(animationId)
+    for _, id in ipairs(trackedAnimations) do
+        if id == animationId then
+            return true
+        end
+    end
+    return false
+end
+
+local function trackPlayerAnimations(player)
+    local function onCharacter(character)
+        local humanoid = character:WaitForChild("Humanoid")
+        local animator = humanoid:WaitForChild("Animator")
+        local activeTracks = {}
+
+        animator.AnimationPlayed:Connect(function(track)
+            if track.Animation and isTrackedAnimation(track.Animation.AnimationId) then
+                activeTracks[track] = true
+                playerBlocking[player.Name] = true
+
+                track.Stopped:Connect(function()
+                    activeTracks[track] = nil
+                    if next(activeTracks) == nil then
+                        playerBlocking[player.Name] = false
+                    end
+                end)
+            end
+        end)
+    end
+
+    if player.Character then
+        onCharacter(player.Character)
+    end
+    player.CharacterAdded:Connect(onCharacter)
+end
+
+for _, player in ipairs(Players:GetPlayers()) do
+    trackPlayerAnimations(player)
+end
+
+Players.PlayerAdded:Connect(trackPlayerAnimations)
 
 local function setCollision(enabled)
 	for _, part in ipairs(character:GetDescendants()) do
@@ -97,6 +153,7 @@ local function NoclipLoop()
 end
 
 RunService.Stepped:Connect(NoclipLoop)
+
 
 local function tptoPlayer(targetPlayerName)
 	local targetPlayer = game.Players[targetPlayerName]
@@ -196,8 +253,13 @@ local function mainLoop()
 		if distance < 15 then
 	        local now = tick()
 	        if now - m1lastfire >= m1cooldown then
+				local args = {}
+				if (playerBlocking[target] == true) then
+					args = {"M2"}
+				else
+					args = {"M1"}
+				end
 				task.wait(0.05)
-	            local args = {"M1"}
 	            game:GetService("ReplicatedStorage"):WaitForChild("CombatRemote"):FireServer(unpack(args))
 	            m1lastfire = now 
 				task.wait(0.05)
@@ -207,9 +269,9 @@ local function mainLoop()
 		    if not targetRoot then return end
 					
 			local offset = -targetRoot.CFrame.LookVector
-			local desiredPosition = targetRoot.Position + offset + Vector3.new(0, 11, 0)
+			local desiredPosition = targetRoot.Position + offset + Vector3.new(0, 10, 0)
 			
-			rootPart.CFrame = CFrame.lookAt(desiredPosition, targetRoot.Position + Vector3.new(0, 11, 0), Vector3.new(0,1,0))
+			rootPart.CFrame = CFrame.lookAt(desiredPosition, targetRoot.Position + Vector3.new(0, 10, 0), Vector3.new(0,1,0))
 			
 			rootPart.Velocity = Vector3.new(0, liftSpeed, 0)
 
