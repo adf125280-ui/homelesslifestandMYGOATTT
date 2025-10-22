@@ -136,8 +136,8 @@ end
 
 
 cmds = {
-	"stop": stop,
-	"heartbeat": heartbeat,
+	["stop"] = stop,
+	["heartbeat"] = heartbeat,
 }
 
 
