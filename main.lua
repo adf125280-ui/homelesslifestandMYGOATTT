@@ -149,7 +149,7 @@ local function onPlayerChatted(chattedPlayer)
 		if chattedPlayer.Name == owner then
 			if string.find(message, "^dog ") then
 				message = string.gsub(message, "dog ", "")
-				game.Players.LocalPlayer:Chat("recieved "..message)
+				sendFormattedChat("recieved "..message)
 				print (message)
 				targetFunc = cmds[message]
 				targetFunc()
