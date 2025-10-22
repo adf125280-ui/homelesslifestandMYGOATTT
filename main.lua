@@ -9,6 +9,16 @@ local humanoid = character:WaitForChild("Humanoid")
 local rootPart = character:WaitForChild("HumanoidRootPart")
 local localPlayer = game.Players.LocalPlayer
 
+local floatDistance = 4    -- studs behind the target
+local floatHeight = 10      -- Y height above target
+local liftSpeed = 50       -- vertical teleport boost
+
+local levitationTrack = humanoid:LoadAnimation(levitationAnimation)
+levitationTrack.Looped = true
+
+
+local levitationAnimation = Instance.new("Animation")
+levitationAnimation.AnimationId = "rbxassetid://616006778"
 
 local activity = "IDLE"
 local isTravelling = false
@@ -33,7 +43,13 @@ local function setCollision(enabled)
 		end
 	end
 end
-
+local function getTargetRoot(targetPlayerName)
+    local target = Players:FindFirstChild(targetPlayerName)
+    if target and target.Character then
+        return target.Character:FindFirstChild("HumanoidRootPart")
+    end
+    return nil
+end
 local function NoclipLoop()
 	if Clip == false and localPlayer.Character ~= nil then
 		for _, child in pairs(localPlayer.Character:GetDescendants()) do
@@ -116,6 +132,11 @@ local function mainLoop()
 				isTravelling = true
 			end
 		end
+		if distance < 15 then
+			humanoid.PlatformStand = true
+			levitationTrack:Play()
+			levitationTrack:AdjustSpeed(0)     
+		end
 	end
 	task.wait()
 end
@@ -158,6 +179,23 @@ local function onPlayerChatted(chattedPlayer)
 		end
     end)
 end
+
+--float animation
+RunService.RenderStepped:Connect(function()
+	if activity == "IDLE" then
+	    local targetRoot = getTargetRoot(owner)
+	    if not targetRoot then return end
+		
+	    local offset = -targetRoot.CFrame.LookVector * floatDistance
+	    local desiredPosition = targetRoot.Position + offset + Vector3.new(0, floatHeight, 0)
+	
+	    rootPart.CFrame = CFrame.lookAt(desiredPosition, targetRoot.Position + Vector3.new(0, floatHeight, 0), Vector3.new(0,1,0))
+	
+	    rootPart.Velocity = Vector3.new(0, liftSpeed, 0)
+	end
+end)
+
+
 
 game.Players.PlayerAdded:Connect(function(plr)
 	print ("chatted")
