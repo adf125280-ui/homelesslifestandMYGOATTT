@@ -119,6 +119,26 @@ local function mainLoop()
 	end
 	task.wait()
 end
+local function sendFormattedChat(message)
+	generalChat:SendAsync("[DOG]: "..message)
+end
+
+
+
+local function stop()
+	sendFormattedChat("Stopping.")
+	activity = "STOPPED"
+	print ("Stopped.")
+end
+local function heartbeat()
+	sendFormattedChat("alive")
+end
+
+
+cmds = {
+	"stop": stop,
+	"heartbeat": heartbeat,
+}
 
 
 
@@ -130,6 +150,9 @@ local function onPlayerChatted(chattedPlayer)
 			if string.find(message, "^dog ") then
 				message = string.gsub(message, "dog ", "")
 				game.Players.LocalPlayer:Chat("recieved "..message)
+				print (message)
+				targetFunc = cmds[message]
+				targetFunc()
 			end
 			
 		end
