@@ -176,7 +176,7 @@ local function onPlayerChatted(chattedPlayer)
 				print (message)
 
 				args = nil
-				if message.find(" ") then
+				if string.find(message, " ") then
 					args = {}
 					cmd = string.split(message, " ")[1]
 					argss = string.split(argsr, " ")
