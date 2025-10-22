@@ -158,8 +158,9 @@ end
 
 
 cmds = {
-	["stop"] = stop,
-	["heartbeat"] = heartbeat,
+	["stop"] = {stop, "Stops the bot.", nil}
+	["heartbeat"] = {heartbeat, "Check if bot living", nil},
+	["changeOwnership"] = {changeOwnership, "Change ownership of bot", {newOwner},
 }
 
 
@@ -173,8 +174,39 @@ local function onPlayerChatted(chattedPlayer)
 				message = string.gsub(message, "dog ", "")
 				sendFormattedChat("recieved "..message)
 				print (message)
-				targetFunc = cmds[message]
-				targetFunc()
+
+				args = nil
+				if message.find(" ") then
+					args = {}
+					cmd = string.split(message, " ")[1]
+					argss = string.split(argsr, " ")
+					for arg in argss do
+						print (arg)
+						args[#args+1] = arg
+					end
+				else
+					cmd = message
+				end
+				if not(cmd in cmds) then
+					sendFormattedChat("Invalid command: "..cmd)
+					return
+				end
+
+				if not(cmds[cmd][3] == nil) and args == nil then
+					sendFormattedChat(#cmds[cmd][3]" args expected, none recieved for: "..cmd)
+					return
+				end
+				if not(args == nil) and not(#cmds[cmd][3] == #args]) then
+					sendFormattedChat("Incorrect amount of args recieved, "..#cmds[cmd][3]" expected, "..#args.." recieved.")
+					return
+				end
+
+				targetFunc = cmds[cmd]
+				if args then
+					targetFunc(args)
+				else
+					targetFunc()
+				end
 			end
 			
 		end
