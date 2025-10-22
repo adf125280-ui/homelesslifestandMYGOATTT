@@ -183,7 +183,7 @@ end
 
 --float animation
 RunService.RenderStepped:Connect(function()
-	if activity == "IDLE" then
+	if activity == "IDLE" and isTravelling == false then
 	    local targetRoot = getTargetRoot(owner)
 	    if not targetRoot then return end
 		
