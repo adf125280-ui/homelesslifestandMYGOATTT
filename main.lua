@@ -196,7 +196,7 @@ local function onPlayerChatted(chattedPlayer)
 					sendFormattedChat(#cmds[cmd][3]" args expected, none recieved for: "..cmd)
 					return
 				end
-				if not(args == nil) and not(#cmds[cmd][3] == #args]) then
+				if not(args == nil) and not(#cmds[cmd][3] == #args) then
 					sendFormattedChat("Incorrect amount of args recieved, "..#cmds[cmd][3]" expected, "..#args.." recieved.")
 					return
 				end
