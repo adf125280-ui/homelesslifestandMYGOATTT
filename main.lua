@@ -13,12 +13,13 @@ local floatDistance = 4    -- studs behind the target
 local floatHeight = 10      -- Y height above target
 local liftSpeed = 50       -- vertical teleport boost
 
-local levitationTrack = humanoid:LoadAnimation(levitationAnimation)
-levitationTrack.Looped = true
-
 
 local levitationAnimation = Instance.new("Animation")
 levitationAnimation.AnimationId = "rbxassetid://616006778"
+
+
+local levitationTrack = humanoid:LoadAnimation(levitationAnimation)
+levitationTrack.Looped = true
 
 local activity = "IDLE"
 local isTravelling = false
