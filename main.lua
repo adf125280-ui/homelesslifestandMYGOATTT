@@ -478,7 +478,7 @@ local function bring(args)
 		rootPart.Velocity = Vector3.new(0, 0, 0)
 		task.wait(0.1)
 	end
-	flyspeed = 60
+	flyspeed = 40
 	activity = "IDLE"
 
 
@@ -491,14 +491,14 @@ local function bring(args)
 
 	local distance = (ownerRoot.Position - localRoot.Position).Magnitude
 	print ("waiting distance")
-	task.wait(3)
+	task.wait(4)
 	print ((ownerRoot.Position - localRoot.Position).Magnitude)
 	while ((ownerRoot.Position - localRoot.Position).Magnitude > 15 and isTravelling == false and (ownerRoot.Position - targetRoot.Position).Magnitude > 15) do
 		task.wait()
 	end
 	print ((ownerRoot.Position - localRoot.Position).Magnitude)
 	print ("distance hit, dropping")
-	task.wait(3)
+	task.wait(4)
 	local args = {
 		"Carry"
 	}
