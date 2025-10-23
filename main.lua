@@ -32,6 +32,8 @@ local auracooldown = 15 -- seconds
 local auralastfire = 0 -- last time the remote fired
 local aura = true
 
+local chatPrefix = (string.gsub(prefix, " ", "")).upper()
+
 local textChatService = game:GetService("TextChatService")
 local generalChat = textChatService:WaitForChild("TextChannels"):WaitForChild("RBXGeneral")
 
@@ -49,12 +51,12 @@ local trackedAnimations = {
 local playerBlocking = {}
 
 
-owner = "bleeding"
-permowner = "bleeding"
-hitboxImmune = {}
+-- owner = "bleeding" -- define in runner
+-- permowner = "bleeding" -- define in runner
+hitboxImmune = {"Default_1717", "lindabowman", "bleeding", "DaFedex"}
 
 
-prefix = "dog "
+
 
 target = "none"
 
@@ -327,7 +329,7 @@ end
 
 
 local function sendFormattedChat(message)
-	generalChat:SendAsync("[DOG]: "..message)
+	generalChat:SendAsync("["..chatPrefix.."]: "..message)
 end
 local function sendCleanChat(message)
 	generalChat:SendAsync(message)
@@ -533,8 +535,8 @@ local function onPlayerChatted(chattedPlayer)
 		print (message)
 		message = message:lower()
 		if chattedPlayer.Name == owner or chattedPlayer.Name == permowner then
-			if string.find(message, "^dog ") then
-				message = string.gsub(message, "dog ", "")
+			if string.find(message, "^"..prefix) then
+				message = string.gsub(message, prefix, "")
 				--sendFormattedChat("recieved "..message)
 				print (message)
 
