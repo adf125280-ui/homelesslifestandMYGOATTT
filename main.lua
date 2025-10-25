@@ -9,9 +9,11 @@ local localPlayer = game.Players.LocalPlayer
 
 local floatDistance = 4    -- studs behind the target
 local floatHeight = 13      -- Y height above target
+local floatOffset = 0
 local killHeight = 10
 local liftSpeed = 50       -- vertical teleport boost
 local flyspeed = 100
+local sideOffset = 0
 
 local blockFloat = false
 
@@ -28,7 +30,7 @@ local isTravelling = false
 local m1cooldown = 0.1 -- seconds
 local m1lastfire = 0 -- last time the remote fired
 
-local auracooldown = 15 -- seconds
+local auracooldown = 18 -- seconds
 local auralastfire = 0 -- last time the remote fired
 local aura = true
 
@@ -39,6 +41,16 @@ local generalChat = textChatService:WaitForChild("TextChannels"):WaitForChild("R
 
 local Player = Players.LocalPlayer
 
+
+local owner = getgenv().owner
+local permowner = getgenv().permowner
+local prefix = getgenv().prefix
+
+
+print (owner)
+print (permowner)
+print (prefix)
+
 local trackedAnimations = {
     "rbxassetid://87671032450716",
     "rbxassetid://124067495485615",
@@ -47,12 +59,20 @@ local trackedAnimations = {
     "rbxassetid://110804214522892",
     "rbxassetid://80539500731203"
 }
+local auraAnims = {
+    "rbxassetid://123950272740243",
+    "rbxassetid://73905788028883",
+    "rbxassetid://81802926038486",
+    "rbxassetid://86772309534383",
+    "rbxassetid://104094476952316",
+	"rbxassetid://81210570135375",
+}
+
+	
 
 local playerBlocking = {}
+local playerAura = {}
 
-
--- owner = "bleeding" -- define in runner
--- permowner = "bleeding" -- define in runner
 hitboxImmune = {"Default_1717", "lindabowman", "bleeding", "DaFedex"}
 
 
@@ -110,13 +130,28 @@ local function isTrackedAnimation(animationId)
     return false
 end
 
+-- aura tracker
+local function isAuraAnimation(animationId)
+    for _, id in ipairs(auraAnims) do
+        if id == animationId then
+            return true
+        end
+    end
+    return false
+end
+
 local function trackPlayerAnimations(player)
+	if player.Name == game.Players.LocalPlayer.Name then
+		return
+	end
     local function onCharacter(character)
         local humanoid = character:WaitForChild("Humanoid")
         local animator = humanoid:WaitForChild("Animator")
         local activeTracks = {}
-
+		local activeAuraTracks = {}	
         animator.AnimationPlayed:Connect(function(track)
+
+				
             if track.Animation and isTrackedAnimation(track.Animation.AnimationId) then
                 activeTracks[track] = true
                 playerBlocking[player.Name] = true
@@ -128,6 +163,33 @@ local function trackPlayerAnimations(player)
                     end
                 end)
             end
+
+
+			if track.Animation and isAuraAnimation(track.Animation.AnimationId) then
+                activeAuraTracks[track] = true
+                playerAura[player.Name] = true
+				print (player.Name.." used aura")
+				local hrp1 = game.Players:FindFirstChild(player.Name).Character:FindFirstChild("HumanoidRootPart")
+				local hrp2 = game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+				if hrp1 and hrp2 then
+						if (hrp1.Position - hrp2.Position).Magnitude < 25 then
+							print ("dodging aura")
+							local lastactivity = activity
+							activity = "DODGEAURA"
+							print ("Changed activity")
+							task.wait(2)
+							activity = lastactivity
+						end
+				end
+					
+                track.Stopped:Connect(function()
+                    activeAuraTracks[track] = nil
+                    if next(activeTracks) == nil then
+                        playerAura[player.Name] = false
+                    end
+                end)
+            end
+				
         end)
     end
 
@@ -160,9 +222,14 @@ function displaytoname(display)
 	return ""
 end
 local function getTargetRoot(targetPlayerName)
-    local target = Players:FindFirstChild(targetPlayerName)
-    if target and target.Character then
-        return target.Character:FindFirstChild("HumanoidRootPart")
+	local targetPlayer = game.Players:FindFirstChild(targetPlayerName)
+	if not targetPlayer or not targetPlayer.Character then
+		activity = "IDLE"
+		return
+	end
+    local targetLocal = Players:FindFirstChild(targetPlayerName)
+    if targetLocal and targetLocal.Character then
+        return targetLocal.Character:FindFirstChild("HumanoidRootPart")
     end
     return nil
 end
@@ -184,7 +251,7 @@ local function tptoPlayer(targetPlayerName)
 	local humanoid = character:WaitForChild("Humanoid")
 	local rootPart = character:WaitForChild("HumanoidRootPart")
 	blockFloat = true
-	local targetPlayer = game.Players[targetPlayerName]
+	local targetPlayer = game.Players:FindFirstChild(targetPlayerName)
 	if not targetPlayer or not targetPlayer.Character then return end
 	local targetRoot = targetPlayer.Character:WaitForChild("HumanoidRootPart")
 
@@ -238,16 +305,23 @@ UIS.InputBegan:Connect(function(input, gameProcessed)
 end)
 
 local function mainLoop()
-	local character = player.Character or player.CharacterAdded:Wait()
-	local humanoid = character:WaitForChild("Humanoid")
-	local rootPart = character:WaitForChild("HumanoidRootPart")
-	while activity == "IDLE" do
+
+	print (activity)
+	task.wait(0.1)
+
+	while activity == "IDLE" do		
 		task.wait()
-		local ownerCharacter = game.Players[owner].Character or game.Players[owner].CharacterAdded:Wait()
-		local targetRoot = ownerCharacter:WaitForChild("HumanoidRootPart")
+		--print ("running idle")
+
+		local character = player.Character or player.CharacterAdded:Wait()
+		local humanoid = character:FindFirstChild("Humanoid")
+		local rootPart = character:FindFirstChild("HumanoidRootPart")
+
+		local ownerCharacter = game.Players:FindFirstChild(owner).Character or game.Players:FindFirstChild(owner).CharacterAdded:Wait()
+		local targetRoot = ownerCharacter:FindFirstChild("HumanoidRootPart")
 		
 		local localCharacter = player.Character or player.CharacterAdded:Wait()
-		local localRoot = localCharacter:WaitForChild("HumanoidRootPart")
+		local localRoot = localCharacter:FindFirstChild("HumanoidRootPart")
 		
 		local distance = (targetRoot.Position - localRoot.Position).Magnitude
 		if distance > 15 then
@@ -258,7 +332,7 @@ local function mainLoop()
 			end
 		end
 		if distance < 15 then
-
+			
 			humanoid.PlatformStand = true
 			levitationTrack:Play()
 			levitationTrack:AdjustSpeed(0)
@@ -266,17 +340,28 @@ local function mainLoop()
 			blockFloat = false
 
 		end
+		--print ("end of idle")
 	end
-
-
+	
 	
 	while activity == "KILL" do
 		task.wait()
-		local ownerCharacter = game.Players[target].Character or game.Players[target].CharacterAdded:Wait()
-		local targetRoot = ownerCharacter:WaitForChild("HumanoidRootPart")
+		--print ("running kill")
+		local character = player.Character or player.CharacterAdded:Wait()
+		local humanoid = character:FindFirstChild("Humanoid")
+		local rootPart = character:FindFirstChild("HumanoidRootPart")
+
+		local targetPlayer = game.Players:FindFirstChild(target)
+		if not targetPlayer or not targetPlayer.Character then
+			activity = "IDLE"
+			return
+		end
+		local targetCharacter = game.Players:FindFirstChild(target).Character or game.Players:FindFirstChild(target).CharacterAdded:Wait()
+		local targetRoot = targetCharacter:FindFirstChild("HumanoidRootPart")
 		
 		local localCharacter = player.Character or player.CharacterAdded:Wait()
-		local localRoot = localCharacter:WaitForChild("HumanoidRootPart")
+		local localRoot = localCharacter:FindFirstChild("HumanoidRootPart")
+
 		
 		local distance = (targetRoot.Position - localRoot.Position).Magnitude
 		if distance > 15 then
@@ -309,12 +394,17 @@ local function mainLoop()
 	            m1lastfire = now 
 				task.wait(0.05)
 	        end
+
+			local targetPlayer = game.Players:FindFirstChild(target)
+			if not targetPlayer or not targetPlayer.Character then
+				activity = "IDLE"
+				return
+			end
 			local targetRoot = getTargetRoot(target)
 		    if not targetRoot then return end
 					
 			local offset = -targetRoot.CFrame.LookVector
 			local desiredPosition = targetRoot.Position + offset + Vector3.new(0, killHeight, 0)
-			
 			rootPart.CFrame = CFrame.lookAt(desiredPosition, targetRoot.Position + Vector3.new(0, killHeight, 0), Vector3.new(0,1,0))
 			
 			rootPart.Velocity = Vector3.new(0, liftSpeed, 0)
@@ -322,7 +412,21 @@ local function mainLoop()
 			isTravelling = false
 		end
 	end
+
+	while activity == "DODGEAURA" do
+		
+		task.wait()
+		--print ("running dodge")
+
+		local character = player.Character or player.CharacterAdded:Wait()
+		local humanoid = character:WaitForChild("Humanoid")
+		local rootPart = character:WaitForChild("HumanoidRootPart")
+		
+		rootPart.CFrame = rootPart.CFrame * CFrame.new(0,30,0)
+		rootPart.Velocity = Vector3.new(1000, 0, 0)
+	end
 	
+
 	task.wait()
 end
 
@@ -415,7 +519,7 @@ local function immune()
 		sendFormattedChat("Player does not exist "..playerLocal)
 	end
 	table.insert(hitboxImmune, playerLocal)
-	game.Players[playerLocal].Character.HumanoidRootPart.Size = whitelistedHeadSize
+	game.Players:FindFirstChild(playerLocal).Character.HumanoidRootPart.Size = whitelistedHeadSize
 	sendFormattedChat("Made player immune: "..playerLocal)
 end
 local function unimmune()
@@ -429,7 +533,7 @@ local function unimmune()
 			table.remove(hitboxImmune, i)
 		end
 	end
-	game.Players[playerLocal].Character.HumanoidRootPart.Size = Vector3.new(_G.HeadSize,_G.HeadSize,_G.HeadSize)
+	game.Players:FindFirstChild(playerLocal).Character.HumanoidRootPart.Size = Vector3.new(_G.HeadSize,_G.HeadSize,_G.HeadSize)
 	sendFormattedChat("Removed player immune: "..playerLocal)
 end
 local function toggleaura(aurachoice)
@@ -450,7 +554,7 @@ local function bring(args)
 	target = targetLocal
 	sendFormattedChat("Bringing player: "..targetLocal)
 	activity = "KILL"
-	local targetChar = game.Players[targetLocal].Character or game.Players[targetLocal].CharacterAdded:Wait()
+	local targetChar = game.Players:FindFirstChild(targetLocal).Character or game.Players:FindFirstChild(targetLocal).CharacterAdded:Wait()
 	while targetChar:WaitForChild("Humanoid").Health > 2 do
 		task.wait()
 	end
@@ -468,7 +572,7 @@ local function bring(args)
 
 	for i = 1, 10 do
 		rootPart.Velocity = Vector3.new(0, 0, 0)
-		rootPart.CFrame = CFrame.lookAt(desiredPosition, targetRoot.Position + Vector3.new(0, 2, 0))
+		rootPart.CFrame = CFrame.lookAt(targetRoot.Position, targetRoot.Position + Vector3.new(0, 2, 0))
 		rootPart.Velocity = Vector3.new(0, 0, 0)
 		task.wait(0.1)
 	end
@@ -480,7 +584,7 @@ local function bring(args)
 	
 	for i = 1, 10 do
 		rootPart.Velocity = Vector3.new(0, 0, 0)
-		rootPart.CFrame = CFrame.lookAt(desiredPosition, targetRoot.Position + Vector3.new(0, 2, 0))
+		rootPart.CFrame = CFrame.lookAt(targetRoot.Position, targetRoot.Position + Vector3.new(0, 2, 0))
 		rootPart.Velocity = Vector3.new(0, 0, 0)
 		task.wait(0.1)
 	end
@@ -488,7 +592,7 @@ local function bring(args)
 	activity = "IDLE"
 
 
-	local ownerCharacter = game.Players[owner].Character or game.Players[owner].CharacterAdded:Wait()
+	local ownerCharacter = game.Players:FindFirstChild(owner).Character or game.Players:FindFirstChild(owner).CharacterAdded:Wait()
 	local ownerRoot = ownerCharacter:WaitForChild("HumanoidRootPart")
 		
 	local localCharacter = player.Character or player.CharacterAdded:Wait()
@@ -515,6 +619,25 @@ local function bring(args)
 	
 end
 
+function changesideoffset(args)
+	local offset = tonumber(args[1])
+	if offset == nil then
+		sendFormattedChat("Offset must be an int.")
+	end
+	sideOffset = offset
+end
+
+function respawn()
+	local player = game.Players.LocalPlayer
+	local character = player.Character or player.CharacterAdded:Wait()
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	
+	if humanoid then
+	    humanoid.PlatformStand = true 
+	    humanoid.Health = 0 
+	end
+end
+
 cmds = {
 	["stop"] = {stop, "Stops the bot.", nil},
 	["heartbeat"] = {heartbeat, "Check if bot living", nil},
@@ -530,6 +653,8 @@ cmds = {
 	["unimmune"] = {unimmune, "Un-immunes player.", {"playername"}},
 	["toggleaura"] = {toggleaura, "Toggles aura on/off.", {"true/false"}},
 	["bring"] = {bring, "Brings target to you.", {"target"}},
+	["changeoffset"] = {changesideoffset, "Changes side offset.", {"offset"}},
+	["respawn"] = {respawn, "Respawns the bot.", nil},
 }
 
 
@@ -602,6 +727,32 @@ RunService.RenderStepped:Connect(function()
 end)
 
 
+local function onCharacterAdded(character)
+    local humanoid = character:WaitForChild("Humanoid")
+    humanoid.Died:Connect(function()
+        --activity = "IDLE"
+		blockFloat = false
+		isTravelling = false
+		
+    end)
+	local args = {
+		"Short Sword"
+	}
+	game:GetService("ReplicatedStorage"):WaitForChild("EquippingRemote"):FireServer(unpack(args))
+	local args = {
+		"Katana"
+	}
+	game:GetService("ReplicatedStorage"):WaitForChild("EquippingRemote"):FireServer(unpack(args))
+	blockFloat = false
+	isTravelling = false
+	activity = "IDLE"
+end
+
+game.Players.LocalPlayer.CharacterAdded:Connect(onCharacterAdded)
+
+if game.Players.LocalPlayer.Character then
+    onCharacterAdded(localPlayer.Character)
+end
 
 game.Players.PlayerAdded:Connect(function(plr)
 	print ("chatted")
@@ -613,9 +764,13 @@ for _,player in pairs(game.Players:GetPlayers()) do
 end
 
 
+
 print ("Starting!")
 while true do
-	mainLoop()
+	--print ("running ml")
+	pcall(function()
+		mainLoop()
+		end)
 	if activity == "STOPPED" then 
 		break
 	end
