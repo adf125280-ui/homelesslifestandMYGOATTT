@@ -32,7 +32,7 @@ local auracooldown = 15 -- seconds
 local auralastfire = 0 -- last time the remote fired
 local aura = true
 
-local chatPrefix = (string.gsub(prefix, " ", "")).upper()
+local chatPrefix = string.upper((string.gsub(prefix, " ", "")))
 
 local textChatService = game:GetService("TextChatService")
 local generalChat = textChatService:WaitForChild("TextChannels"):WaitForChild("RBXGeneral")
@@ -424,7 +424,11 @@ local function unimmune()
 	if playerLocal == nil then
 		sendFormattedChat("Player does not exist "..playerLocal)
 	end
-	table.remove(hitboxImmune, playerLocal)
+	for i, v in ipairs(hitboxImmune) do
+		if v == playerLocal then
+			table.remove(hitboxImmune, i)
+		end
+	end
 	game.Players[playerLocal].Character.HumanoidRootPart.Size = Vector3.new(_G.HeadSize,_G.HeadSize,_G.HeadSize)
 	sendFormattedChat("Removed player immune: "..playerLocal)
 end
