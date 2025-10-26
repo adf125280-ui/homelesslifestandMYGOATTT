@@ -213,14 +213,34 @@ local function setCollision(enabled)
 		end
 	end
 end
-function displaytoname(display) 
-	for _,player in pairs(game.Players:GetPlayers()) do
-		if string.lower(player.DisplayName) == string.lower(display) then
-			return player.name
+
+function findname(display)
+	local search = string.lower(display)
+	local bestMatch = nil
+	local bestLength = 0
+
+	for _, player in pairs(game.Players:GetPlayers()) do
+		local disp = string.lower(player.DisplayName)
+		if string.sub(disp, 1, #search) == search then
+			if bestMatch == nil or #disp < bestLength then
+				bestMatch = player
+				bestLength = #disp
+			end
 		end
 	end
-	return ""
+	if not bestMatch then
+		for _, player in pairs(game.Players:GetPlayers()) do
+			local disp = string.lower(player.DisplayName)
+			if string.find(disp, search, 1, true) then
+				bestMatch = player
+				break
+			end
+		end
+	end
+
+	return bestMatch and bestMatch.Name or ""
 end
+
 local function getTargetRoot(targetPlayerName)
 	local targetPlayer = game.Players:FindFirstChild(targetPlayerName)
 	if not targetPlayer or not targetPlayer.Character then
@@ -447,7 +467,7 @@ local function findPlayer(playerNameRaw)
 		end
 	end
 	if playerName == nil then
-		playerName = displaytoname(playerNameRaw)
+		playerName = findname(playerNameRaw)
 	end
 	if playerName == nil or playerName == " " or playerName == "" then
 		return nil
