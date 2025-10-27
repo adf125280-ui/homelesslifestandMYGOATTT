@@ -2,6 +2,10 @@ local players = game:GetService("Players")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UIS = game:GetService("UserInputService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ClientSideHitbox = ReplicatedStorage:WaitForChild("ClientSideHitbox")
+local module_upvr = require(ReplicatedStorage:WaitForChild("MeleeHitbox"))
+local LocalPlayer_upvr = game:GetService("Players").LocalPlayer
 
 
 local player = Players.LocalPlayer
@@ -782,6 +786,44 @@ end)
 for _,player in pairs(game.Players:GetPlayers()) do
 	onPlayerChatted(player)
 end
+
+
+--instakill
+function registerClientSideHitbox(playerv)
+
+	ClientSideHitbox.OnClientEvent:Connect(function(arg1)
+			rawbuffer = buffer.tostring(arg1)
+			local targetPlayer = game.Players:FindFirstChild(tostring(playerv))
+			if not(targetPlayer) then
+				return
+			end
+			local args = {
+				targetPlayer.Character,
+				buffer.fromstring(rawbuffer)
+			}
+			
+			if playerv == game.Players.LocalPlayer.Name then
+				return
+			end
+			for i,immunePlayer in pairs(hitboxImmune) do
+				if playerv == immunePlayer then
+					return
+				end
+			end
+			
+			for var=0,20 do
+				game:GetService("ReplicatedStorage"):WaitForChild("ClientSideHitbox"):FireServer(unpack(args))
+			end
+	end)
+end
+
+for _,playerv in game.Players:GetPlayers() do
+	registerClientSideHitbox(tostring(playerv.Name))
+end
+
+game.Players.PlayerAdded:Connect(function(plr)
+	registerClientSideHitbox(tostring(plr.Name))
+end)
 
 
 
