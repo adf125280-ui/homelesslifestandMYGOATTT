@@ -18,7 +18,7 @@ local killHeight = 10
 local liftSpeed = 50       -- vertical teleport boost
 local flyspeed = 100
 local sideOffset = 0
-
+local lastallowed = false
 local blockFloat = false
 
 local levitationAnimation = Instance.new("Animation")
@@ -49,7 +49,7 @@ local Player = Players.LocalPlayer
 local owner = getgenv().owner
 local permowner = getgenv().permowner
 local prefix = getgenv().prefix
-
+local herdprefix = getgenv().herdprefix
 
 print (owner)
 print (permowner)
@@ -83,9 +83,10 @@ hitboxImmune = {"Default_1717", "lindabowman", "bleeding", "DaFedex"}
 
 
 target = "none"
+loopkilling = false
+loopkilltarget = "none"
 
-
-generalChat:SendAsync(owner.." owns me :3")
+generalChat:SendAsync(string.upper(prefix).."online - created by @bleeding [Friendly Clan #1]")
 
 
 whitelistedHeadSize = Vector3.new(1,1,1)
@@ -289,6 +290,7 @@ local function tptoPlayer(targetPlayerName)
 	rootPart.CFrame = rootPart.CFrame - Vector3.new(0, 50, 0)
 	local connection
 	connection = RunService.RenderStepped:Connect(function()
+		task.wait()
 		if not flying then return end
 		if not targetPlayer.Character or not targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
 			flying = false
@@ -297,7 +299,7 @@ local function tptoPlayer(targetPlayerName)
 
 		local targetPos = targetRoot.Position
 		local currentPos = rootPart.Position
-
+		
 		if stage == "travel" then
 			local undergroundTarget = Vector3.new(targetPos.X, currentPos.Y, targetPos.Z)
 			local distance = (undergroundTarget - currentPos).Magnitude
@@ -307,6 +309,7 @@ local function tptoPlayer(targetPlayerName)
 				local direction = (undergroundTarget - currentPos).Unit
 				local speed = math.clamp(distance * 10, flyspeed, flyspeed*3)
 				rootPart.Velocity = direction * speed
+				print ("travelling")
 			else
 				rootPart.CFrame = CFrame.new(targetPos.X, targetPos.Y, targetPos.Z)
 				flying = false
@@ -314,8 +317,9 @@ local function tptoPlayer(targetPlayerName)
 				humanoid.PlatformStand = false
 				humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
 				setCollision(true)
-				connection:Disconnect()
 				isTravelling = false
+				print ("idle travelling")
+				connection:Disconnect()
 			end
 		end
 	end)
@@ -348,14 +352,14 @@ local function mainLoop()
 		local localRoot = localCharacter:FindFirstChild("HumanoidRootPart")
 		
 		local distance = (targetRoot.Position - localRoot.Position).Magnitude
-		if distance > 15 then
+		if distance > 20 then
 			if isTravelling == false then
 				blockFloat = true
 				tptoPlayer(owner)
 				isTravelling = true			
 			end
 		end
-		if distance < 15 then
+		if distance < 20 then
 			
 			humanoid.PlatformStand = true
 			levitationTrack:Play()
@@ -377,6 +381,8 @@ local function mainLoop()
 
 		local targetPlayer = game.Players:FindFirstChild(target)
 		if not targetPlayer or not targetPlayer.Character then
+			print ("plr left")
+			sendFormattedChat("Kill target "..target.." left the game.")
 			activity = "IDLE"
 			return
 		end
@@ -388,13 +394,14 @@ local function mainLoop()
 
 		
 		local distance = (targetRoot.Position - localRoot.Position).Magnitude
-		if distance > 15 then
+		if distance > 20 then
 			if isTravelling == false then
+				blockFloat = true
 				tptoPlayer(target)
 				isTravelling = true
 			end
 		end
-		if distance < 15 then
+		if distance < 20 then
 	        local now = tick()
 			if now - auralastfire >= auracooldown and aura == true then
 				task.wait(0.2)
@@ -421,19 +428,17 @@ local function mainLoop()
 
 			local targetPlayer = game.Players:FindFirstChild(target)
 			if not targetPlayer or not targetPlayer.Character then
+				print ("plr left")
+				sendFormattedChat("Kill target "..target.." left the game.")
 				activity = "IDLE"
 				return
 			end
-			local targetRoot = getTargetRoot(target)
-		    if not targetRoot then return end
-					
-			local offset = -targetRoot.CFrame.LookVector
-			local desiredPosition = targetRoot.Position + offset + Vector3.new(0, killHeight, 0)
-			rootPart.CFrame = CFrame.lookAt(desiredPosition, targetRoot.Position + Vector3.new(0, killHeight, 0), Vector3.new(0,1,0))
-			
-			rootPart.Velocity = Vector3.new(0, liftSpeed, 0)
 
+			humanoid.PlatformStand = true
+			levitationTrack:Play()
+			levitationTrack:AdjustSpeed(0)
 			isTravelling = false
+			blockFloat = false
 		end
 	end
 
@@ -522,6 +527,7 @@ local function changekillheight(args)
 	killHeight = height
 end
 local function kill(args)
+	lastallowed = false
 	targetRaw = args[1]
 	targetLocal = findPlayer(targetRaw)
 	if targetLocal == nil then
@@ -530,7 +536,6 @@ local function kill(args)
 	target = targetLocal
 	sendFormattedChat("Killing player: "..targetLocal)
 	activity = "KILL"
-	
 end
 local function toidle()
 	activity = "IDLE"
@@ -570,6 +575,7 @@ local function toggleaura(aurachoice)
 	sendFormattedChat("Toggled aura to: "..choice) 
 end
 local function bring(args)
+	lastallowed = false
 	targetRaw = args[1]
 	targetLocal = findPlayer(targetRaw)
 	if targetLocal == nil then
@@ -662,6 +668,29 @@ function respawn()
 	end
 end
 
+local loopkillconnection
+function loopkill(args)
+	targetRaw = args[1]
+	loopkilltarget = findPlayer(targetRaw)
+	target = loopkilltarget
+	loopkilling = true
+	sendFormattedChat("Loopkilling "..loopkilltarget.."!")
+	activity = "KILL"
+	loopkillconnection = game.Players.PlayerAdded:Connect(function(plr)
+		if plr.Name == loopkilltarget then
+			sendFormattedChat("Loopkill target "..loopkilltarget.." rejoined!")
+			task.wait(1)
+			activity = "KILL"
+		end
+	end)
+end
+
+function unloopkill()
+	loopkilling = false
+	sendFormattedChat("Stopped loopkilling.")
+	loopkillconnection:Disconnect()
+end
+
 cmds = {
 	["stop"] = {stop, "Stops the bot.", nil},
 	["heartbeat"] = {heartbeat, "Check if bot living", nil},
@@ -672,6 +701,8 @@ cmds = {
 	["changekillheight"] = {changekillheight, "Change the killing height", {"height"}},
 	["help"] = {help, "Provides information about a command", {"commandname"}},
 	["kill"] = {kill, "Kills player", {"playername"}},
+	["loopkill"] = {loopkill, "Loopkills player", {"playername"}},
+	["unloopkill"] = {unloopkill, "Stops loopkill", nil},
 	["idle"] = {toidle, "Returns bot to idle", nil},
 	["immune"] = {immune, "Prevents bot from damaging player.", {"playername"}},
 	["unimmune"] = {unimmune, "Un-immunes player.", {"playername"}},
@@ -688,8 +719,9 @@ local function onPlayerChatted(chattedPlayer)
 		print (message)
 		message = message:lower()
 		if chattedPlayer.Name == owner or chattedPlayer.Name == permowner then
-			if string.find(message, "^"..prefix) then
+			if string.find(message, "^"..prefix) or string.find(message, "^"..herdprefix)then
 				message = string.gsub(message, prefix, "")
+				message = string.gsub(message, herdprefix, "")
 				--sendFormattedChat("recieved "..message)
 				print (message)
 
@@ -733,22 +765,65 @@ local function onPlayerChatted(chattedPlayer)
 end
 
 --float animation
-RunService.RenderStepped:Connect(function()
+float = (function()
+	task.wait()
 	local character = player.Character or player.CharacterAdded:Wait()
-	local humanoid = character:WaitForChild("Humanoid")
-	local rootPart = character:WaitForChild("HumanoidRootPart")
+	local humanoid = character:FindFirstChild("Humanoid")
+	local rootPart = character:FindFirstChild("HumanoidRootPart")
+	if not(character) or not(humanoid) or not (rootPart) then
+			return
+	end
 	if activity == "IDLE" and isTravelling == false and blockFloat == false then
+		if lastallowed == false then
+			task.wait(0.5)
+			lastallowed = true
+		end
 	    local targetRoot = getTargetRoot(owner)
 	    if not targetRoot then return end
-		
+
+		local distance = (targetRoot.Position - rootPart.Position).Magnitude
+		if distance > 20 then
+			print ("distance >15, blocking float")
+			return
+		end
+			
 	    local offset = -targetRoot.CFrame.LookVector * floatDistance
 	    local desiredPosition = targetRoot.Position + offset + Vector3.new(0, floatHeight, 0)
 	
 	    rootPart.CFrame = CFrame.lookAt(desiredPosition, targetRoot.Position + Vector3.new(0, floatHeight, 0), Vector3.new(0,1,0))
 	
 	    rootPart.Velocity = Vector3.new(0, liftSpeed, 0)
+	elseif activity == "KILL" and isTravelling == false and blockFloat == false then
+		if lastallowed == false then
+			task.wait(0.5)
+			lastallowed = true
+		end
+	    local targetRoot = getTargetRoot(target)
+	    if not targetRoot then return end
+
+		local distance = (targetRoot.Position - rootPart.Position).Magnitude
+		if distance > 20 then
+			print ("distance >15, blocking float")
+			return
+		end
+			
+	    local offset = -targetRoot.CFrame.LookVector
+	    local desiredPosition = targetRoot.Position + offset + Vector3.new(0, killHeight, 0)
+	
+	    rootPart.CFrame = CFrame.lookAt(desiredPosition, targetRoot.Position + Vector3.new(0, killHeight, 0), Vector3.new(0,1,0))
+	
+	    rootPart.Velocity = Vector3.new(0, liftSpeed, 0)
+	else
+		lastallowed = false
 	end
 end)
+
+task.spawn(function()
+	while true do
+		float()
+	end
+end)
+
 
 
 local function onCharacterAdded(character)
@@ -757,7 +832,13 @@ local function onCharacterAdded(character)
         --activity = "IDLE"
 		blockFloat = false
 		isTravelling = false
-		
+		if loopkilling == true then
+			task.wait(0.5)
+			activity = "KILL"
+		else	
+			activity = "IDLE"
+		end
+	end
     end)
 	local args = {
 		"Short Sword"
@@ -769,7 +850,13 @@ local function onCharacterAdded(character)
 	game:GetService("ReplicatedStorage"):WaitForChild("EquippingRemote"):FireServer(unpack(args))
 	blockFloat = false
 	isTravelling = false
-	activity = "IDLE"
+
+	if loopkilling == true then
+		task.wait(0.5)
+		activity = "KILL"
+	else	
+		activity = "IDLE"
+	end
 end
 
 game.Players.LocalPlayer.CharacterAdded:Connect(onCharacterAdded)
@@ -788,7 +875,7 @@ for _,player in pairs(game.Players:GetPlayers()) do
 end
 
 
---instakill
+--instakill - broken
 function registerClientSideHitbox(playerv)
 
 	ClientSideHitbox.OnClientEvent:Connect(function(arg1)
@@ -823,6 +910,35 @@ end
 
 game.Players.PlayerAdded:Connect(function(plr)
 	registerClientSideHitbox(tostring(plr.Name))
+end)
+
+
+-- disable ragdoll
+local event = game.ReplicatedStorage.Ragdoll.RemoteEvent
+
+for _, c in ipairs(getconnections(event.OnClientEvent)) do
+    c:Disable()
+end
+
+event.OnClientEvent:Connect(function(...)
+	return
+end)
+
+local function NoclipLoop()
+	task.wait()
+	if game.Players.LocalPlayer.Character then
+		for _, child in pairs(game.Players.LocalPlayer.Character:GetDescendants()) do
+			if child:IsA("BasePart") and child.CanCollide == true then
+				child.CanCollide = false
+			end
+		end
+	end
+end
+task.spawn(function()
+	while true do
+		task.wait()
+		NoclipLoop()
+	end
 end)
 
 
