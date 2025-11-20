@@ -838,7 +838,6 @@ local function onCharacterAdded(character)
 		else	
 			activity = "IDLE"
 		end
-	end
     end)
 	local args = {
 		"Short Sword"
