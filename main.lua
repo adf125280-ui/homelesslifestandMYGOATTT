@@ -103,9 +103,10 @@ whitelistedHeadSize = Vector3.new(1,1,1)
 _G.HeadSize = 80
 _G.Disabled = true
 
--- hitbox
+-- hitbox (old)
 game:GetService('RunService').RenderStepped:connect(function()
-	if _G.Disabled then
+	local hitboxdisabled = true
+	if not(hitboxdisabled) then
 		for i,v in next, game:GetService('Players'):GetPlayers() do
 			if v.Name ~= game:GetService('Players').LocalPlayer.Name then
 				local whitelisted = false
@@ -133,6 +134,35 @@ end)
 
 
 
+--hitbox new 
+local remote = game.ReplicatedStorage.ClientSideHitbox
+
+for _, connection in pairs(getconnections(remote.OnClientEvent)) do
+    connection:Disable()
+end
+
+remote.OnClientEvent:Connect(function(...)
+	args = {...}
+	buf = buffer.tostring(args[1])
+	
+	for _,player in game.Players:GetPlayers() do
+		local isImmune = false
+		for _,immuneplayer in hitboxImmune do
+			if player.Name == immuneplayer then
+				isImmune = true
+			end
+		end
+		if isImmune then
+			continue
+		end
+		local args = {
+			player.Character,
+			buffer.fromstring(buf)
+		}
+		game:GetService("ReplicatedStorage"):WaitForChild("ClientSideHitbox"):FireServer(unpack(args))
+	end
+	
+end)
 
 -- block tracker
 local function isTrackedAnimation(animationId)
@@ -313,7 +343,7 @@ local function tptoPlayer(targetPlayerName)
 			local undergroundTarget = Vector3.new(targetPos.X, currentPos.Y, targetPos.Z)
 			local distance = (undergroundTarget - currentPos).Magnitude
 
-			if distance > 20 then
+			if distance > 25 then
 				rootPart.CFrame = CFrame.new(currentPos, undergroundTarget)
 				local direction = (undergroundTarget - currentPos).Unit
 				local speed = math.clamp(distance * 10, flyspeed, flyspeed*3)
@@ -830,6 +860,7 @@ float = (function()
 	local character = player.Character or player.CharacterAdded:Wait()
 	local humanoid = character:FindFirstChild("Humanoid")
 	local rootPart = character:FindFirstChild("HumanoidRootPart")
+	local blockIter = 0
 	if not(character) or not(humanoid) or not (rootPart) then
 			return
 	end
@@ -907,6 +938,25 @@ float = (function()
 		
 	    rootPart.CFrame = finalCFrame
 		rootPart.Velocity = Vector3.new(0, liftSpeed, 0)
+
+		blockIter = blockIter + 1
+		if blockIter == 100 then
+			blockIter = 0
+			local args = {
+				"Unblock"
+			}
+			game:GetService("ReplicatedStorage"):WaitForChild("CombatRemote"):FireServer(unpack(args))
+		end
+			
+		local args = {
+			"Block"
+		}
+		game:GetService("ReplicatedStorage"):WaitForChild("CombatRemote"):FireServer(unpack(args))
+		local args = {
+			"M1"
+		}
+		game:GetService("ReplicatedStorage"):WaitForChild("CombatRemote"):FireServer(unpack(args))
+			
 	else
 		lastallowed = false
 	end
@@ -970,7 +1020,7 @@ end
 
 --instakill - broken
 function registerClientSideHitbox(playerv)
-
+	return  -- broken 
 	ClientSideHitbox.OnClientEvent:Connect(function(arg1)
 			rawbuffer = buffer.tostring(arg1)
 			local targetPlayer = game.Players:FindFirstChild(tostring(playerv))
@@ -1023,6 +1073,7 @@ RunService.RenderStepped:Connect(function(deltaTime)
     end
 	task.wait()
 end)
+
 
 
 
