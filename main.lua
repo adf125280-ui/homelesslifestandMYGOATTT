@@ -20,6 +20,15 @@ local flyspeed = 100
 local sideOffset = 0
 local lastallowed = false
 local blockFloat = false
+local iscracking = false
+
+local crackoffset = 1
+crackspeed = 5
+local crackdirection = 1 
+
+
+
+
 
 local levitationAnimation = Instance.new("Animation")
 levitationAnimation.AnimationId = "rbxassetid://616006778"
@@ -304,7 +313,7 @@ local function tptoPlayer(targetPlayerName)
 			local undergroundTarget = Vector3.new(targetPos.X, currentPos.Y, targetPos.Z)
 			local distance = (undergroundTarget - currentPos).Magnitude
 
-			if distance > 5 then
+			if distance > 20 then
 				rootPart.CFrame = CFrame.new(currentPos, undergroundTarget)
 				local direction = (undergroundTarget - currentPos).Unit
 				local speed = math.clamp(distance * 10, flyspeed, flyspeed*3)
@@ -352,14 +361,14 @@ local function mainLoop()
 		local localRoot = localCharacter:FindFirstChild("HumanoidRootPart")
 		
 		local distance = (targetRoot.Position - localRoot.Position).Magnitude
-		if distance > 20 then
+		if distance > 25 then
 			if isTravelling == false then
 				blockFloat = true
 				tptoPlayer(owner)
 				isTravelling = true			
 			end
 		end
-		if distance < 20 then
+		if distance < 25 then
 			
 			humanoid.PlatformStand = true
 			levitationTrack:Play()
@@ -394,14 +403,14 @@ local function mainLoop()
 
 		
 		local distance = (targetRoot.Position - localRoot.Position).Magnitude
-		if distance > 20 then
+		if distance > 25 then
 			if isTravelling == false then
 				blockFloat = true
 				tptoPlayer(target)
 				isTravelling = true
 			end
 		end
-		if distance < 20 then
+		if distance < 25 then
 	        local now = tick()
 			if now - auralastfire >= auracooldown and aura == true then
 				task.wait(0.2)
@@ -577,9 +586,13 @@ end
 local function bring(args)
 	lastallowed = false
 	targetRaw = args[1]
+	localRun = args[2]
+	
+	
 	targetLocal = findPlayer(targetRaw)
 	if targetLocal == nil then
 		sendFormattedChat("Player does not exist "..targetLocal)
+		return false
 	end
 	target = targetLocal
 	sendFormattedChat("Bringing player: "..targetLocal)
@@ -621,6 +634,9 @@ local function bring(args)
 	flyspeed = 40
 	activity = "IDLE"
 
+	if localRun then
+		return true
+	end
 
 	local ownerCharacter = game.Players:FindFirstChild(owner).Character or game.Players:FindFirstChild(owner).CharacterAdded:Wait()
 	local ownerRoot = ownerCharacter:WaitForChild("HumanoidRootPart")
@@ -631,20 +647,21 @@ local function bring(args)
 
 	local distance = (ownerRoot.Position - localRoot.Position).Magnitude
 	print ("waiting distance")
+	
 	task.wait(4)
-	print ((ownerRoot.Position - localRoot.Position).Magnitude)
-	while ((ownerRoot.Position - localRoot.Position).Magnitude > 15 and isTravelling == false and (ownerRoot.Position - targetRoot.Position).Magnitude > 15) do
-		task.wait()
-	end
-	print ((ownerRoot.Position - localRoot.Position).Magnitude)
-	print ("distance hit, dropping")
+	--print ((ownerRoot.Position - localRoot.Position).Magnitude)
+	--while ((ownerRoot.Position - localRoot.Position).Magnitude > 15 and isTravelling == false and (ownerRoot.Position - targetRoot.Position).Magnitude > 15) do
+	--	task.wait()
+	--end
+	--print ((ownerRoot.Position - localRoot.Position).Magnitude)
+	--print ("distance hit, dropping")
 	task.wait(4)
-	local args = {
-		"Carry"
-	}
-	game:GetService("ReplicatedStorage"):WaitForChild("CombatRemote"):FireServer(unpack(args))
+	--local args = {
+	--	"Carry"
+	--}
+	--game:GetService("ReplicatedStorage"):WaitForChild("CombatRemote"):FireServer(unpack(args))
 
-	sendFormattedChat("Here is "..targetLocal.."!")
+	--sendFormattedChat("Here is "..targetLocal.."!")
 	flyspeed = 100
 	
 end
@@ -691,6 +708,45 @@ function unloopkill()
 	loopkillconnection:Disconnect()
 end
 
+function crack(args)
+	iscracking = true
+	args[2] = true
+	bringresult = bring(args)
+	if not(bringresult) then
+		iscracking = false
+		return
+	end
+	while not((game.Players[owner].Character.HumanoidRootPart.Position - game.Players[target].Character.HumanoidRootPart.Position).Magnitude > 4 and (game.Players[owner].Character.HumanoidRootPart.Position - game.Players[target].Character.HumanoidRootPart.Position).Magnitude < 18) do
+		task.wait()
+	end
+	--sendFormattedChat("Here is "..targetLocal.."!")
+	task.wait(0.5)
+	print ("bring finished")
+	lastallowed = false
+	activity = "CRACK"
+	
+end
+
+function uncrack()
+	iscracking = false
+	activity = "IDLE"
+end
+
+function drop()
+	local args = {
+		"Carry"
+	}
+	game:GetService("ReplicatedStorage"):WaitForChild("CombatRemote"):FireServer(unpack(args))
+end
+function changecrackspeed()
+	crackspeedraw = tonumber(args[1])
+	if crackspeedraw == nil then
+		sendFormattedChat("Cspeed must be an int.")
+	end
+	--sendFormattedChat("Changed crackspeed to "..crackspeed..".")
+	crackspeed = crackspeedraw
+end
+
 cmds = {
 	["stop"] = {stop, "Stops the bot.", nil},
 	["heartbeat"] = {heartbeat, "Check if bot living", nil},
@@ -708,8 +764,12 @@ cmds = {
 	["unimmune"] = {unimmune, "Un-immunes player.", {"playername"}},
 	["toggleaura"] = {toggleaura, "Toggles aura on/off.", {"true/false"}},
 	["bring"] = {bring, "Brings target to you.", {"target"}},
+	["crack"] = {crack, "Cracks target.", {"target"}},
+	["cspeed"] = {changecrackspeed, "Changes crack speed.", {"speed"}},
+	["uncrack"] = {uncrack, "Uncracks target", nil},
 	["changeoffset"] = {changesideoffset, "Changes side offset.", {"offset"}},
 	["respawn"] = {respawn, "Respawns the bot.", nil},
+	["drop"] = {drop, "Drops held player.", nil},
 }
 
 
@@ -782,7 +842,7 @@ float = (function()
 	    if not targetRoot then return end
 
 		local distance = (targetRoot.Position - rootPart.Position).Magnitude
-		if distance > 20 then
+		if distance > 25 then
 			print ("distance >15, blocking float")
 			return
 		end
@@ -802,7 +862,7 @@ float = (function()
 	    if not targetRoot then return end
 
 		local distance = (targetRoot.Position - rootPart.Position).Magnitude
-		if distance > 20 then
+		if distance > 25 then
 			print ("distance >15, blocking float")
 			return
 		end
@@ -812,7 +872,41 @@ float = (function()
 	
 	    rootPart.CFrame = CFrame.lookAt(desiredPosition, targetRoot.Position + Vector3.new(0, killHeight, 0), Vector3.new(0,1,0))
 	
-	    rootPart.Velocity = Vector3.new(0, liftSpeed, 0)
+	    rootPart.Velocity = Vector3.new(0, liftSpeed, 0)		
+	elseif activity == "CRACK" and isTravelling == false and blockFloat == false then
+		if lastallowed == false then
+			task.wait(0.5)
+			lastallowed = true
+		end
+	    local targetRoot = getTargetRoot(target)
+	    if not targetRoot then return end
+
+		local character = game.Players.LocalPlayer.Character or game.Players.LocalPlayer.CharacterAdded:Wait()
+	    local rootPart = character:FindFirstChild("HumanoidRootPart")
+
+		local ownercharacter = game.Players[owner].Character or game.Players[owner].CharacterAdded:Wait()
+	    local ownerRootPart = ownercharacter:FindFirstChild("HumanoidRootPart")
+
+		local distance = (ownerRootPart.Position - rootPart.Position).Magnitude
+		if distance > 25 then
+			print ("distance >15, blocking float")
+			return
+		end
+			
+	    local offsetdistance = -crackoffset        -- 1 → 3 oscillation
+	    local rightOffset = -2       -- slight shift right
+	    local verticalOffset = -2
+	
+	    -- Position in front of the target, slightly right, relative to facing
+	    local offsetCF = CFrame.new(rightOffset, verticalOffset, -offsetdistance)
+	
+	    -- Get the target's rotation but flipped 180° to face opposite direction
+	    local oppositeRotation = ownerRootPart.CFrame * CFrame.Angles(0, math.rad(180), 0)
+	
+	    local finalCFrame = oppositeRotation * offsetCF
+		
+	    rootPart.CFrame = finalCFrame
+		rootPart.Velocity = Vector3.new(0, liftSpeed, 0)
 	else
 		lastallowed = false
 	end
@@ -910,6 +1004,26 @@ end
 game.Players.PlayerAdded:Connect(function(plr)
 	registerClientSideHitbox(tostring(plr.Name))
 end)
+
+
+
+
+-- crack distance
+RunService.RenderStepped:Connect(function(deltaTime)
+    crackoffset = crackoffset + crackdirection * crackspeed * deltaTime
+
+    if crackoffset >= 3 then
+        crackoffset = 3
+        crackdirection = -1
+    end
+
+    if crackoffset <= 1 then
+        crackoffset = 1
+        crackdirection = 1
+    end
+	task.wait()
+end)
+
 
 
 -- disable ragdoll
