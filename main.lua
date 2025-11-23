@@ -45,7 +45,7 @@ local m1lastfire = 0 -- last time the remote fired
 
 local auracooldown = 18 -- seconds
 local auralastfire = 0 -- last time the remote fired
-local aura = true
+local aura = false
 
 local chatPrefix = string.upper((string.gsub(prefix, " ", "")))
 
@@ -102,37 +102,6 @@ whitelistedHeadSize = Vector3.new(1,1,1)
 
 _G.HeadSize = 80
 _G.Disabled = true
-
--- hitbox (old)
-game:GetService('RunService').RenderStepped:connect(function()
-	local hitboxdisabled = true
-	if not(hitboxdisabled) then
-		for i,v in next, game:GetService('Players'):GetPlayers() do
-			if v.Name ~= game:GetService('Players').LocalPlayer.Name then
-				local whitelisted = false
-				for i,player in pairs(hitboxImmune) do
-					if player == v.Name then
-						whitelisted = true
-					end
-				end
-				if whitelisted == false then			
-					pcall(function()
-						v.Character.HumanoidRootPart.Size = Vector3.new(_G.HeadSize,_G.HeadSize,_G.HeadSize)
-						v.Character.HumanoidRootPart.CanCollide = false
-					end)
-				end
-				if whitelisted == true then
-					pcall(function()
-						v.Character.HumanoidRootPart.Size = whitelistedHeadSize
-						v.Character.HumanoidRootPart.CanCollide = false
-					end)
-				end
-			end
-		end
-	end
-end)
-
-
 
 --hitbox new 
 local remote = game.ReplicatedStorage.ClientSideHitbox
@@ -258,7 +227,7 @@ local function setCollision(enabled)
 	end
 end
 
-function findname(display)
+function findName(display)
 	local search = string.lower(display)
 	local bestMatch = nil
 	local bestLength = 0
@@ -297,7 +266,7 @@ local function getTargetRoot(targetPlayerName)
     end
     return nil
 end
-local function NoclipLoop()
+local function noClipLoop()
 	if Clip == false and localPlayer.Character ~= nil then
 		for _, child in pairs(localPlayer.Character:GetDescendants()) do
 			if child:IsA("BasePart") and child.CanCollide == true and child.Name ~= floatName then
@@ -307,10 +276,10 @@ local function NoclipLoop()
 	end
 end
 
-RunService.Stepped:Connect(NoclipLoop)
+RunService.Stepped:Connect(noClipLoop)
 
 
-local function tptoPlayer(targetPlayerName)
+local function tpToPlayer(targetPlayerName)
 	local character = player.Character or player.CharacterAdded:Wait()
 	local humanoid = character:WaitForChild("Humanoid")
 	local rootPart = character:WaitForChild("HumanoidRootPart")
@@ -357,6 +326,7 @@ local function tptoPlayer(targetPlayerName)
 				humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
 				setCollision(true)
 				isTravelling = false
+				stage = "none"
 				print ("idle travelling")
 				connection:Disconnect()
 			end
@@ -391,14 +361,15 @@ local function mainLoop()
 		local localRoot = localCharacter:FindFirstChild("HumanoidRootPart")
 		
 		local distance = (targetRoot.Position - localRoot.Position).Magnitude
-		if distance > 25 then
+		if distance > 50 then
 			if isTravelling == false then
+				print (distance)
 				blockFloat = true
-				tptoPlayer(owner)
+				tpToPlayer(owner)
 				isTravelling = true			
 			end
 		end
-		if distance < 25 then
+		if distance < 50 then
 			
 			humanoid.PlatformStand = true
 			levitationTrack:Play()
@@ -433,14 +404,14 @@ local function mainLoop()
 
 		
 		local distance = (targetRoot.Position - localRoot.Position).Magnitude
-		if distance > 25 then
+		if distance > 50 then
 			if isTravelling == false then
 				blockFloat = true
-				tptoPlayer(target)
+				tpToPlayer(target)
 				isTravelling = true
 			end
 		end
-		if distance < 25 then
+		if distance < 50 then
 	        local now = tick()
 			if now - auralastfire >= auracooldown and aura == true then
 				task.wait(0.2)
@@ -515,7 +486,7 @@ local function findPlayer(playerNameRaw)
 		end
 	end
 	if playerName == nil then
-		playerName = findname(playerNameRaw)
+		playerName = findName(playerNameRaw)
 	end
 	if playerName == nil or playerName == " " or playerName == "" then
 		return nil
@@ -760,6 +731,10 @@ end
 function uncrack()
 	iscracking = false
 	activity = "IDLE"
+	local args = {
+		"Unblock"
+		}
+	game:GetService("ReplicatedStorage"):WaitForChild("CombatRemote"):FireServer(unpack(args))
 end
 
 function drop()
@@ -778,7 +753,7 @@ function changecrackspeed()
 end
 
 cmds = {
-	["stop"] = {stop, "Stops the bot.", nil},
+	--["stop"] = {stop, "Stops the bot.", nil},
 	["heartbeat"] = {heartbeat, "Check if bot living", nil},
 	["changeowner"] = {changeowner, "Change ownership of bot", {"newOwner"}},
 	["say"] = {say, "Makes the bot send a message", {"message"}},
@@ -873,7 +848,8 @@ float = (function()
 	    if not targetRoot then return end
 
 		local distance = (targetRoot.Position - rootPart.Position).Magnitude
-		if distance > 25 then
+		if distance > 50 then
+			print (distance)
 			print ("distance >15, blocking float")
 			return
 		end
@@ -893,7 +869,8 @@ float = (function()
 	    if not targetRoot then return end
 
 		local distance = (targetRoot.Position - rootPart.Position).Magnitude
-		if distance > 25 then
+		if distance > 50 then
+			print (distance)
 			print ("distance >15, blocking float")
 			return
 		end
@@ -919,7 +896,8 @@ float = (function()
 	    local ownerRootPart = ownercharacter:FindFirstChild("HumanoidRootPart")
 
 		local distance = (ownerRootPart.Position - rootPart.Position).Magnitude
-		if distance > 25 then
+		if distance > 50 then
+			print (distance)
 			print ("distance >15, blocking float")
 			return
 		end
