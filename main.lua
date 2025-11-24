@@ -422,7 +422,9 @@ local function mainLoop()
 				}
 				game:GetService("ReplicatedStorage"):WaitForChild("ActionRemote"):FireServer(unpack(args))
 				auralastfire = now
-				task.wait(0.2)
+				task.wait(0.3)
+				local input = loadstring(game:HttpGet('https://pastebin.com/raw/dYzQv3d8'))() -- UNTESTED NEEDS TO BE TESTED
+				input.press(Enum.KeyCode.Space) -- UNTESTED NEEDS TO BE TESTED, to fix stuck in aura
 			end
 			
 	        --if now - m1lastfire >= m1cooldown then
