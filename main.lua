@@ -21,6 +21,8 @@ local sideOffset = 0
 local lastallowed = false
 local blockFloat = false
 local iscracking = false
+local hvhEnabled = false
+local hvhLastHp = 0
 
 local crackoffset = 1
 crackspeed = 5
@@ -86,7 +88,7 @@ local auraAnims = {
 local playerBlocking = {}
 local playerAura = {}
 
-hitboxImmune = {"Default_1717", "lindabowman", "bleeding", "DaFedex"}
+hitboxImmune = {"Default_1717", "lindabowman", "bleeding", "DaFedex", "HomelessLifeCat", game.Players.LocalPlayer.Name}
 
 
 
@@ -423,19 +425,46 @@ local function mainLoop()
 				task.wait(0.2)
 			end
 			
-	        if now - m1lastfire >= m1cooldown then
-				local args = {}
-				if (playerBlocking[target] == true) then
-					args = {"M2"}
-				else
-					args = {"M1"}
-				end
-				task.wait(0.05)
-	            game:GetService("ReplicatedStorage"):WaitForChild("CombatRemote"):FireServer(unpack(args))
-	            m1lastfire = now 
-				task.wait(0.05)
-	        end
+	        --if now - m1lastfire >= m1cooldown then
+			local args = {}
+			if (playerBlocking[target] == true) then
+				args = {"M2"}
+			else
+				args = {"M1"}
+			end
+			task.wait(0.05)
+	        game:GetService("ReplicatedStorage"):WaitForChild("CombatRemote"):FireServer(unpack(args))
+	        m1lastfire = now 
+			task.wait(0.05)
 
+			
+			if hvhEnabled then
+				local args = {
+					"Block"
+				}
+				game:GetService("ReplicatedStorage"):WaitForChild("CombatRemote"):FireServer(unpack(args))
+				local args = {
+					"M1"
+				}
+				game:GetService("ReplicatedStorage"):WaitForChild("CombatRemote"):FireServer(unpack(args))
+
+				if (humanoid.Health < hvhLastHp) then
+					print ("Block was double-broken, escaping.")
+					local escapeStartTime = tick()
+
+					while tick() - escapeStartTime < 2 do
+					    task.wait()
+						rootPart.CFrame = rootPart.CFrame * CFrame.new(0,30,0)
+						rootPart.Velocity = Vector3.new(1000, 0, 0)
+						blockFloat = true
+					end
+					blockFloat = false
+				end
+				
+				hvhLastHp = humanoid.Health
+				
+			end
+			
 			local targetPlayer = game.Players:FindFirstChild(target)
 			if not targetPlayer or not targetPlayer.Character then
 				print ("plr left")
@@ -743,7 +772,7 @@ function drop()
 	}
 	game:GetService("ReplicatedStorage"):WaitForChild("CombatRemote"):FireServer(unpack(args))
 end
-function changecrackspeed()
+function changecrackspeed(args)
 	crackspeedraw = tonumber(args[1])
 	if crackspeedraw == nil then
 		sendFormattedChat("Cspeed must be an int.")
@@ -751,7 +780,10 @@ function changecrackspeed()
 	--sendFormattedChat("Changed crackspeed to "..crackspeed..".")
 	crackspeed = crackspeedraw
 end
-
+function togglehvh()
+	hvhEnabled = not(hvhEnabled)
+	
+end
 cmds = {
 	--["stop"] = {stop, "Stops the bot.", nil},
 	["heartbeat"] = {heartbeat, "Check if bot living", nil},
@@ -775,6 +807,7 @@ cmds = {
 	["changeoffset"] = {changesideoffset, "Changes side offset.", {"offset"}},
 	["respawn"] = {respawn, "Respawns the bot.", nil},
 	["drop"] = {drop, "Drops held player.", nil},
+	["hvh"] = {togglehvh, "Toggles hvh mode", nil},
 }
 
 
