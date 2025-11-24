@@ -361,7 +361,7 @@ local function mainLoop()
 		local localRoot = localCharacter:FindFirstChild("HumanoidRootPart")
 		
 		local distance = (targetRoot.Position - localRoot.Position).Magnitude
-		if distance > 50 then
+		if distance > 75 then
 			if isTravelling == false then
 				print (distance)
 				blockFloat = true
@@ -369,7 +369,7 @@ local function mainLoop()
 				isTravelling = true			
 			end
 		end
-		if distance < 50 then
+		if distance < 75 then
 			
 			humanoid.PlatformStand = true
 			levitationTrack:Play()
@@ -404,14 +404,14 @@ local function mainLoop()
 
 		
 		local distance = (targetRoot.Position - localRoot.Position).Magnitude
-		if distance > 50 then
+		if distance > 75 then
 			if isTravelling == false then
 				blockFloat = true
 				tpToPlayer(target)
 				isTravelling = true
 			end
 		end
-		if distance < 50 then
+		if distance < 75 then
 	        local now = tick()
 			if now - auralastfire >= auracooldown and aura == true then
 				task.wait(0.2)
@@ -848,7 +848,7 @@ float = (function()
 	    if not targetRoot then return end
 
 		local distance = (targetRoot.Position - rootPart.Position).Magnitude
-		if distance > 50 then
+		if distance > 75 then
 			print (distance)
 			print ("distance >15, blocking float")
 			return
@@ -869,7 +869,7 @@ float = (function()
 	    if not targetRoot then return end
 
 		local distance = (targetRoot.Position - rootPart.Position).Magnitude
-		if distance > 50 then
+		if distance > 75 then
 			print (distance)
 			print ("distance >15, blocking float")
 			return
@@ -896,7 +896,7 @@ float = (function()
 	    local ownerRootPart = ownercharacter:FindFirstChild("HumanoidRootPart")
 
 		local distance = (ownerRootPart.Position - rootPart.Position).Magnitude
-		if distance > 50 then
+		if distance > 75 then
 			print (distance)
 			print ("distance >15, blocking float")
 			return
