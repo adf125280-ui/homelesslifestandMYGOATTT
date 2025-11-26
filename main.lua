@@ -97,7 +97,7 @@ target = "none"
 loopkilling = false
 loopkilltarget = "none"
 
-generalChat:SendAsync(string.upper(prefix).."online - created by @bleeding [Friendly Clan #1]")
+generalChat:SendAsync(string.upper(prefix).."online - created by @bleeding [Friendly Clan #1 invite code 8hSKpBGJtK]")
 
 
 whitelistedHeadSize = Vector3.new(1,1,1)
@@ -363,7 +363,7 @@ local function mainLoop()
 		local localRoot = localCharacter:FindFirstChild("HumanoidRootPart")
 		
 		local distance = (targetRoot.Position - localRoot.Position).Magnitude
-		if distance > 75 then
+		if distance > 25 then
 			if isTravelling == false then
 				print (distance)
 				blockFloat = true
@@ -371,7 +371,7 @@ local function mainLoop()
 				isTravelling = true			
 			end
 		end
-		if distance < 75 then
+		if distance < 25 then
 			
 			humanoid.PlatformStand = true
 			levitationTrack:Play()
@@ -406,14 +406,14 @@ local function mainLoop()
 
 		
 		local distance = (targetRoot.Position - localRoot.Position).Magnitude
-		if distance > 75 then
+		if distance > 25 then
 			if isTravelling == false then
 				blockFloat = true
 				tpToPlayer(target)
 				isTravelling = true
 			end
 		end
-		if distance < 75 then
+		if distance < 25 then
 	        local now = tick()
 			if now - auralastfire >= auracooldown and aura == true then
 				task.wait(0.2)
@@ -876,14 +876,14 @@ float = (function()
 	end
 	if activity == "IDLE" and isTravelling == false and blockFloat == false then
 		if lastallowed == false then
-			task.wait(0.5)
+			task.wait(0.02)
 			lastallowed = true
 		end
 	    local targetRoot = getTargetRoot(owner)
 	    if not targetRoot then return end
 
 		local distance = (targetRoot.Position - rootPart.Position).Magnitude
-		if distance > 75 then
+		if distance > 25 then
 			print (distance)
 			print ("distance >15, blocking float")
 			return
@@ -897,14 +897,14 @@ float = (function()
 	    rootPart.Velocity = Vector3.new(0, liftSpeed, 0)
 	elseif activity == "KILL" and isTravelling == false and blockFloat == false then
 		if lastallowed == false then
-			task.wait(0.5)
+			task.wait(0.02)
 			lastallowed = true
 		end
 	    local targetRoot = getTargetRoot(target)
 	    if not targetRoot then return end
 
 		local distance = (targetRoot.Position - rootPart.Position).Magnitude
-		if distance > 75 then
+		if distance > 25 then
 			print (distance)
 			print ("distance >15, blocking float")
 			return
@@ -918,7 +918,7 @@ float = (function()
 	    rootPart.Velocity = Vector3.new(0, liftSpeed, 0)		
 	elseif activity == "CRACK" and isTravelling == false and blockFloat == false then
 		if lastallowed == false then
-			task.wait(0.5)
+			task.wait(0.02)
 			lastallowed = true
 		end
 	    local targetRoot = getTargetRoot(target)
@@ -931,7 +931,7 @@ float = (function()
 	    local ownerRootPart = ownercharacter:FindFirstChild("HumanoidRootPart")
 
 		local distance = (ownerRootPart.Position - rootPart.Position).Magnitude
-		if distance > 75 then
+		if distance > 25 then
 			print (distance)
 			print ("distance >15, blocking float")
 			return
